@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<body>
+    <div>Current Leg Tag Speed: <span id="legTag">0</span> (<span id="legTagState"></span>)</div>
+    <button onclick="sendLegTag()">Send Leg Tag</button>
+    <button onclick="stopLegTag()">Stop Leg Tag</button>
+    <button onclick="increaseLegTagSpeed()">Increase Leg Tag Speed</button>
+    <button onclick="decreaseLegTagSpeed()">Decrease Leg Tag Speed</button>
+    <br />
+    <br />
+    <div>Current Hand Tag Speed: <span id="handTag">0</span> (<span id="handTagState"></span>)</div>
+    <button onclick="sendHandTag()">Send Hand Tag</button>
+    <button onclick="stopHandTag()">Stop Hand Tag</button>
+    <button onclick="increaseHandTagSpeed()">Increase Hand Tag Speed</button>
+    <button onclick="decreaseHandTagSpeed()">Decrease Hand Tag Speed</button>
+</body>
+<script>
+    var connection = undefined;
+    var legInterval = undefined;
+    var handInterval = undefined;
+    var legTagSpeed = 5000;
+    var handTagSpeed = 5000;
+
+    const legSpeedSpan = document.getElementById("legTag");
+    const legTagState = document.getElementById("legTagState");
+    legSpeedSpan.textContent = legTagSpeed;
+    legTagState.textContent = "STOP";
+
+    const handSpeedSpan = document.getElementById("handTag");
+    const handTagState = document.getElementById("handTagState");
+    handSpeedSpan.textContent = handTagSpeed;
+    handTagState.textContent = "STOP";
+
+    function randomInt(min, max) {
+        return min + Math.round(Math.random() * (max - min));
+    }
+
+    function sendLegTag() {
+        clearInterval(legInterval);
+        legInterval = setInterval(() => {
+            if (connection) {
+                var msg = {
+                    event: "onReadTag",
+                    data: {
+                        time: new Date().toISOString(),
+                        epc: "ad2b05004a51d17c3e000012",
+                        aid: 1,
+                        rssi: randomInt(50, 80) * -1,
+                        count: 1
+                    }
+                };
+                connection.send(JSON.stringify(msg));
+            }
+        }, legTagSpeed);
+        legTagState.textContent = "RUNNING"
+    }
+
+    function stopLegTag() {
+        clearInterval(legInterval);
+        legInterval = undefined;
+        legTagState.textContent = "STOP"
+    }
+
+    function increaseLegTagSpeed() {
+        legTagSpeed -= 500;
+        legTagSpeed = Math.max(500, legTagSpeed);
+        if (legInterval) {
+            sendLegTag();
+        }
+        legSpeedSpan.textContent = legTagSpeed;
+    }
+
+    function decreaseLegTagSpeed() {
+        legTagSpeed += 500;
+        legTagSpeed = Math.min(20000, legTagSpeed);
+        if (legInterval) {
+            sendLegTag();
+        }
+        legSpeedSpan.textContent = legTagSpeed;
+    }
+
+    function sendHandTag() {
+        clearInterval(handInterval);
+        handInterval = setInterval(() => {
+            if (connection) {
+                var msg = {
+                    event: "onReadTag",
+                    data: {
+                        time: new Date().toISOString(),
+                        epc: "ad2b05004a50878141000004",
+                        aid: 1,
+                        rssi: randomInt(50, 80) * -1,
+                        count: 1
+                    }
+                };
+                connection.send(JSON.stringify(msg));
+            }
+        }, handTagSpeed);
+        handTagState.textContent = "RUNNING"
+    }
+
+    function stopHandTag() {
+        clearInterval(handInterval);
+        handInterval = undefined;
+        handTagState.textContent = "STOP"
+    }
+
+    function increaseHandTagSpeed() {
+        handTagSpeed -= 500;
+        handTagSpeed = Math.max(500, handTagSpeed);
+        if (handInterval) {
+            sendHandTag();
+        }
+        handSpeedSpan.textContent = handTagSpeed;
+    }
+
+    function decreaseHandTagSpeed() {
+        handTagSpeed += 500;
+        handTagSpeed = Math.min(20000, handTagSpeed);
+        if (handInterval) {
+            sendHandTag();
+        }
+        handSpeedSpan.textContent = handTagSpeed;
+    }
+
+    function connect() {
+        var serverUrl;
+        var scheme = "ws";
+
+        serverUrl = scheme + "://localhost:7749";
+
+        connection = new WebSocket(serverUrl);
+        console.log("***CREATED WEBSOCKET");
+
+        connection.onopen = function (evt) {
+            console.log("***ONOPEN");
+        };
+        console.log("***CREATED ONOPEN");
+
+        connection.onmessage = function (evt) {
+            console.log("***ONMESSAGE");
+            var msg = JSON.parse(evt.data);
+            console.log("Message received: ");
+            console.dir(msg);
+
+            switch (msg.type) {
+                case "onReadTag":
+                    console.log(msg.data);
+                    break;
+            }
+        };
+        console.log("***CREATED ONMESSAGE");
+    }
+    connect();
+</script>
+
+</html>
